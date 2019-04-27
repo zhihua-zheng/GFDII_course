@@ -1,2 +1,8 @@
 # Ignore figures
 *.png
+
+# Ignore data
+/data/
+ 
+# Ignore temporary files
+*.m~
