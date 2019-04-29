@@ -15,31 +15,220 @@ dz     = z(2) - z(1);
 %% Nsq profiles
 
 plot(Nsq,z)
-% plot(M,z)
+plot(M(:,1),z)
 
 %% Constant Nsq case
 
 n      = (1:4);
-lambda = (n*pi/N(1)/H).^2;
+lambda = (n .* pi/N(1)/H).^2;
 
-c_grav = 1/sqrt(lambda);
+c_grav = 1 ./ sqrt(lambda);
 
-figure
-stem(c_grav)
+figure('position',[0 0 550 250])
+stem(n,c_grav,'LineWidth',2)
+set(gca,'fontsize',12,'TickLabelInterpreter','latex')
+xlabel('vertical mode number','Interpreter','latex','fontsize',14)
+ylabel('gravity wave speed $c_g$ [m/s]','Interpreter','latex','fontsize',14,'fontname','Courier')
+xlim([0 5])
+ylim([0 15])
+xticks(1:4)
+saveas(gcf,'./figs/c_grav','png')
 
-%% Eigenvalues & eigenvectors
+lat = (5:60); % latitude
+f   = gsw_f(lat); % Coriolis parameter [1/s]
+Ld  = c_grav(1) ./ f;
+
+figure('position',[0 0 750 380])
+plot(lat,Ld/1000,'LineWidth',2)
+set(gca,'fontsize',12,'TickLabelInterpreter','latex')
+xlabel('latitude [degree]','Interpreter','latex','fontsize',14)
+ylabel('deformation radius $L_d$ [km]','Interpreter','latex','fontsize',14)
+legend('first baroclinic mode','Interpreter','latex','fontsize',14,'location','east')
+xlim([5 60])
+ylim([0 1200])
+saveas(gcf,'./figs/Ld','png')
+
+R      = 6400*1e3; % Earth's radius [m]
+Omega  = 7.292115e-5; % (Groten, 2004) Earth's rotation rate [1/s]
+beta_f = 2*Omega*cosd(lat) ./ R; % beta parameter for Coriolis effect [1/(m*s)]
+c_Ro   = -beta_f ./ (f.^2) .* c_grav(1).^2; % phase speed for long Rossby wave
+
+figure('position',[0 0 750 380])
+plot(lat,c_Ro,'LineWidth',2)
+set(gca,'fontsize',12,'TickLabelInterpreter','latex')
+xlabel('latitude [degree]','Interpreter','latex','fontsize',14)
+ylabel('long Rossby wave phase speed $c_{Ro}$ [m/s]','Interpreter','latex','fontsize',14)
+legend('first baroclinic mode','Interpreter','latex','fontsize',14,'location','east')
+xlim([5 60])
+saveas(gcf,'./figs/c_Ro','png')
+
+dis = 100*111*cosd(lat)*1e3; % distance across Pacific ocean (100 degree) [m]
+t   = dis ./ abs(c_Ro); % time [s]
+
+figure('position',[0 0 750 380])
+plot(lat,t/3600/24,'LineWidth',2)
+set(gca,'fontsize',12,'TickLabelInterpreter','latex')
+title('time for long Rossby wave to across the Pacific','Interpreter','latex','fontsize',15)
+xlabel('latitude [degree]','Interpreter','latex','fontsize',14)
+ylabel('time [day]','Interpreter','latex','fontsize',14)
+legend('first baroclinic mode','Interpreter','latex','fontsize',14,'location','east')
+xlim([5 60])
+saveas(gcf,'./figs/t_Pac','png')
+
+%% Horizontal velocities / pressure - multiple N profiles
 
 A = ( zeros(I) + diag([-ones(I-2,1);0],-1) + diag([0;ones(I-2,1)],1)) ./ (2*dz);
 B = (-2*eye(I) + diag([ ones(I-2,1);2],-1) + diag([2;ones(I-2,1)],1)) ./ (dz^2);
 
-Phi    = zeros(I,I,J);
-Lambda = zeros(I,I,J);
+% eigen-pairs for horizontal velocities, pressure...
+Phi    = zeros(I,I,J); % eigenfuncions
+Lambda = zeros(I,I,J); % eigenvalues
 
 for j = 1:J
         
-    Lj = diag(B*M(:,j),0);
-    Mj = diag(M(:,j),0);
-    C  = -(A*Lj + B*Mj);
+    Lj = diag(A*M(:,j));
+    Mj = diag(M(:,j));
+    C  = -(Lj*A + Mj*B);
     
-    [Phi(:,:,j),Lambda(:,:,j)] = eig(C);
+    [phi,lambda] = eig(C);
+    
+    % sort the eigen-pairs
+    [~,ind]       = sort(diag(lambda));    
+    Lambda(:,:,j) = lambda(ind,ind);
+    Phi(:,:,j)    = phi(:,ind);
 end
+
+%% Visualize phi modes - multiple N profiles
+
+figure('position',[0 0 600 740])
+
+% Number of rows and columns of axes
+ncols = 5;
+nrows = J;
+
+row = zeros(ncols,nrows);
+col = zeros(ncols,nrows);
+
+% width and height of each subplot axis in normalized units
+% axisw = (1 / ncols) * 0.95;
+% axish = (1 / nrows) * 0.95;
+
+for k = 1:ncols*nrows % count for sub-figures
+
+    % calculate the row and column of the subplot
+    row(k) = ceil( k/ncols );
+    col(k) = mod( k-1, ncols ) + 1;
+    
+    % calculate the left, bottom coordinate of this subplot
+%     axisl = (axisw+0.02) * (col-1);
+%     axisb = (axish+0.02) * (row-1);
+
+    subplot(J,5,k)
+
+    if col(k)==1
+        plot(Nsq(:,row(k)),z/1000,'linewidth',2,'color','k')
+        grid on
+        xlim([0 4e-4])
+        set(gca,'fontsize',10,'TickLabelInterpreter','latex','GridLineStyle','--')
+        if row(k) ==1
+            title('$N^2$ [$1/s^2$]','Interpreter','latex','fontsize',14)
+        end
+    else
+        phi = Phi(:,col(k),row(k));
+        phi_l = max(abs(phi)); % max magnitude
+        plot(phi/phi_l,z/1000,'linewidth',1.5,'color','r')
+        hold on
+        plot([0 0],[-4 0],'linewidth',1.8,'color',[.3 .3 .3],'linestyle',':')
+        hold off
+        grid on
+        xlim([-1 1])
+        set(gca,'fontsize',10,'TickLabelInterpreter','latex','GridLineStyle','--')
+        
+        if row(k) ==1
+            title(['$\phi_{',num2str(col(k)-1),'}$'],'Interpreter','latex','fontsize',14)
+        end
+    end
+end
+
+[~,hy] = suplabel('z [km]','y'); 
+set(hy,'Interpreter','latex','fontsize',15)
+
+saveas(gcf,'./figs/phi_modes','png')
+
+%% Fisrt baroclinic mode for phi - multiple N profiles
+
+k      = find(lat==40);
+c_grav = 1 ./ sqrt(squeeze(Lambda(2,2,:)));
+Ld     = c_grav ./ f(k);
+c_Ro   = -beta_f(k)/(f(k)^2) .* (c_grav.^2);
+t      = 100*111*cosd(lat(k))*1e3 ./ abs(c_Ro);
+
+%% Vertical velocity - multiple N profiles
+
+% eigen-pairs for vertical velocity
+S     = zeros(I,I,J); % eigenfuncions
+Gamma = zeros(I,I,J); % eigenvalues
+
+B = (diag([0;-2*ones(I-2,1);0]) + diag([ones(I-2,1);0],-1) + diag([0;ones(I-2,1)],1)) ./ (dz^2);
+
+for j = 1:J
+        
+    Mj = diag(M(:,j));
+    C  = -Mj*B;
+    
+    [s,gamma] = eig(C);
+    
+    % sort the eigen-pairs
+    [~,ind]      = sort(diag(gamma));    
+    Gamma(:,:,j) = gamma(ind,ind);
+    S(:,:,j)     = s(:,ind);
+end
+
+%% Visualize s modes - multiple N profiles
+
+figure('position',[0 0 430 1040])
+
+% Number of rows and columns of axes
+ncols = 2;
+nrows = J;
+
+row = zeros(ncols,nrows);
+col = zeros(ncols,nrows);
+
+for k = 1:ncols*nrows % count for sub-figures
+
+    % calculate the row and column of the subplot
+    row(k) = ceil( k/ncols );
+    col(k) = mod( k-1, ncols ) + 1;
+    
+    subplot(J,2,k)
+
+    if col(k)==1
+        plot(Nsq(:,row(k)),z/1000,'linewidth',2,'color','k')
+        grid on
+        xlim([0 4e-4])
+        set(gca,'fontsize',10,'TickLabelInterpreter','latex','GridLineStyle','--')
+        if row(k) ==1
+            title('$N^2$ [$1/s^2$]','Interpreter','latex','fontsize',14)
+        end
+    else
+        s = S(:,col(k)+1,row(k));
+        s_l = max(abs(s)); % max magnitude
+        plot(s/s_l,z/1000,'linewidth',1.5,'color','b')
+        hold on
+        plot([0 0],[-4 0],'linewidth',1.8,'color',[.3 .3 .3],'linestyle',':')
+        hold off
+        grid on
+        xlim([-1 1])
+        set(gca,'fontsize',10,'TickLabelInterpreter','latex','GridLineStyle','--')
+        
+        if row(k) ==1
+            title(['$S_{',num2str(col(k)-1),'}$'],'Interpreter','latex','fontsize',14)
+        end
+    end
+end
+
+[~,hy] = suplabel('z [km]','y'); 
+set(hy,'Interpreter','latex','fontsize',14)
+
+saveas(gcf,'./figs/s_modes','png')
