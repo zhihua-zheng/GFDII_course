@@ -15,7 +15,7 @@ dz     = z(2) - z(1);
 %% Nsq profiles
 
 plot(Nsq,z)
-plot(M(:,1),z)
+% plot(M(:,1),z)
 
 %% Constant Nsq case
 
@@ -24,56 +24,58 @@ lambda = (n .* pi/N(1)/H).^2;
 
 c_grav = 1 ./ sqrt(lambda);
 
-figure('position',[0 0 550 250])
-stem(n,c_grav,'LineWidth',2)
-set(gca,'fontsize',12,'TickLabelInterpreter','latex')
-xlabel('vertical mode number','Interpreter','latex','fontsize',14)
-ylabel('gravity wave speed $c_g$ [m/s]','Interpreter','latex','fontsize',14,'fontname','Courier')
-xlim([0 5])
-ylim([0 15])
-xticks(1:4)
-saveas(gcf,'./figs/c_grav','png')
-
 lat = (5:60); % latitude
 f   = gsw_f(lat); % Coriolis parameter [1/s]
 Ld  = c_grav(1) ./ f;
-
-figure('position',[0 0 750 380])
-plot(lat,Ld/1000,'LineWidth',2)
-set(gca,'fontsize',12,'TickLabelInterpreter','latex')
-xlabel('latitude [degree]','Interpreter','latex','fontsize',14)
-ylabel('deformation radius $L_d$ [km]','Interpreter','latex','fontsize',14)
-legend('first baroclinic mode','Interpreter','latex','fontsize',14,'location','east')
-xlim([5 60])
-ylim([0 1200])
-saveas(gcf,'./figs/Ld','png')
 
 R      = 6400*1e3; % Earth's radius [m]
 Omega  = 7.292115e-5; % (Groten, 2004) Earth's rotation rate [1/s]
 beta_f = 2*Omega*cosd(lat) ./ R; % beta parameter for Coriolis effect [1/(m*s)]
 c_Ro   = -beta_f ./ (f.^2) .* c_grav(1).^2; % phase speed for long Rossby wave
 
-figure('position',[0 0 750 380])
-plot(lat,c_Ro,'LineWidth',2)
-set(gca,'fontsize',12,'TickLabelInterpreter','latex')
-xlabel('latitude [degree]','Interpreter','latex','fontsize',14)
-ylabel('long Rossby wave phase speed $c_{Ro}$ [m/s]','Interpreter','latex','fontsize',14)
-legend('first baroclinic mode','Interpreter','latex','fontsize',14,'location','east')
-xlim([5 60])
-saveas(gcf,'./figs/c_Ro','png')
-
 dis = 100*111*cosd(lat)*1e3; % distance across Pacific ocean (100 degree) [m]
 t   = dis ./ abs(c_Ro); % time [s]
 
-figure('position',[0 0 750 380])
+figure('position',[0 0 650 1080])
+subplot(4,1,1)
+stem(n,c_grav,'LineWidth',2)
+set(gca,'fontsize',12,'TickLabelInterpreter','latex')
+xlabel('vertical mode number','Interpreter','latex','fontsize',14)
+ylabel('gravity wave $c_g$ [m/s]','Interpreter','latex','fontsize',13)
+xlim([0 5])
+ylim([0 15])
+xticks(1:4)
+% saveas(gcf,'./figs/c_grav','png')
+
+subplot(4,1,2)
+plot(lat,Ld/1000,'LineWidth',2)
+set(gca,'fontsize',12,'TickLabelInterpreter','latex')
+xlabel('latitude [degree]','Interpreter','latex','fontsize',14)
+ylabel('deformation radius $L_d$ [km]','Interpreter','latex','fontsize',13)
+legend('first baroclinic mode','Interpreter','latex','fontsize',14,'location','east')
+xlim([5 60])
+ylim([0 1200])
+% saveas(gcf,'./figs/Ld','png')
+
+subplot(4,1,3)
+plot(lat,c_Ro,'LineWidth',2)
+set(gca,'fontsize',12,'TickLabelInterpreter','latex')
+xlabel('latitude [degree]','Interpreter','latex','fontsize',14)
+ylabel('long Rossby wave $c_{Ro}$ [m/s]','Interpreter','latex','fontsize',13)
+legend('first baroclinic mode','Interpreter','latex','fontsize',14,'location','east')
+xlim([5 60])
+% saveas(gcf,'./figs/c_Ro','png')
+
+subplot(4,1,4)
 plot(lat,t/3600/24,'LineWidth',2)
 set(gca,'fontsize',12,'TickLabelInterpreter','latex')
 title('time for long Rossby wave to across the Pacific','Interpreter','latex','fontsize',15)
 xlabel('latitude [degree]','Interpreter','latex','fontsize',14)
-ylabel('time [day]','Interpreter','latex','fontsize',14)
-legend('first baroclinic mode','Interpreter','latex','fontsize',14,'location','east')
+ylabel('time [day]','Interpreter','latex','fontsize',13)
+legend('first baroclinic mode','Interpreter','latex','fontsize',14,'location','southeast')
 xlim([5 60])
-saveas(gcf,'./figs/t_Pac','png')
+
+saveas(gcf,'./figs/hw2/const_N','png')
 
 %% Horizontal velocities / pressure - multiple N profiles
 
@@ -130,6 +132,7 @@ for k = 1:ncols*nrows % count for sub-figures
         grid on
         xlim([0 4e-4])
         set(gca,'fontsize',10,'TickLabelInterpreter','latex','GridLineStyle','--')
+        
         if row(k) ==1
             title('$N^2$ [$1/s^2$]','Interpreter','latex','fontsize',14)
         end
@@ -153,7 +156,7 @@ end
 [~,hy] = suplabel('z [km]','y'); 
 set(hy,'Interpreter','latex','fontsize',15)
 
-saveas(gcf,'./figs/phi_modes','png')
+saveas(gcf,'./figs/hw2/phi_modes','png')
 
 %% Fisrt baroclinic mode for phi - multiple N profiles
 
@@ -186,7 +189,7 @@ end
 
 %% Visualize s modes - multiple N profiles
 
-figure('position',[0 0 430 1040])
+figure('position',[0 0 300 840])
 
 % Number of rows and columns of axes
 ncols = 2;
@@ -208,6 +211,7 @@ for k = 1:ncols*nrows % count for sub-figures
         grid on
         xlim([0 4e-4])
         set(gca,'fontsize',10,'TickLabelInterpreter','latex','GridLineStyle','--')
+        ylabel('z [km]','Interpreter','latex','fontsize',14)
         if row(k) ==1
             title('$N^2$ [$1/s^2$]','Interpreter','latex','fontsize',14)
         end
@@ -228,7 +232,4 @@ for k = 1:ncols*nrows % count for sub-figures
     end
 end
 
-[~,hy] = suplabel('z [km]','y'); 
-set(hy,'Interpreter','latex','fontsize',14)
-
-saveas(gcf,'./figs/s_modes','png')
+saveas(gcf,'./figs/hw2/s_modes','png')
